@@ -1,0 +1,97 @@
+/* Resume.css */
+
+.resume-page-container {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Background Orbs */
+.resume-orb {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.12;
+}
+
+.orb-primary {
+  background: var(--primary);
+  top: -10%;
+  left: -10%;
+}
+
+.orb-secondary {
+  background: var(--secondary);
+  bottom: -10%;
+  right: -10%;
+}
+
+/* Controls header */
+.resume-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.resume-controls button,
+.resume-controls a {
+  font-size: 0.9rem;
+  padding: 10px 24px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-external-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* PDF Viewer Container */
+.pdf-viewer-container {
+  width: 100%;
+  height: calc(100vh - 160px);
+  min-height: 500px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .resume-page-container {
+    padding: 20px 10px;
+  }
+  .pdf-viewer-container {
+    height: calc(100vh - 120px);
+  }
+  .resume-controls button,
+  .resume-controls a {
+    font-size: 0.82rem;
+    padding: 8px 16px;
+  }
+}

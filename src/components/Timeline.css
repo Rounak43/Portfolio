@@ -1,0 +1,145 @@
+/* Timeline.css */
+.timeline-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-orb-1 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.06);
+  filter: blur(100px);
+  top: 100px;
+  left: -150px;
+  pointer-events: none;
+}
+
+.timeline-orb-2 {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  background: rgba(123, 97, 255, 0.07);
+  filter: blur(100px);
+  bottom: 100px;
+  right: -100px;
+  pointer-events: none;
+}
+
+.timeline-container {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  padding: 20px 0;
+  z-index: 1;
+}
+
+/* Central Line */
+.timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform-origin: top;
+  background: linear-gradient(180deg, var(--primary), var(--secondary), var(--primary));
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+/* Timeline Item */
+.timeline-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 48px;
+  position: relative;
+}
+
+.timeline-left {
+  flex-direction: row-reverse;
+  padding-right: calc(50% + 40px);
+}
+
+.timeline-right {
+  flex-direction: row;
+  padding-left: calc(50% + 40px);
+}
+
+/* Dot */
+.timeline-dot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  z-index: 2;
+  border: 3px solid var(--bg);
+  flex-shrink: 0;
+}
+
+/* Card */
+.timeline-card {
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  cursor: default;
+  transition: border-color 0.3s ease;
+}
+
+.timeline-card:hover {
+  border-color: var(--t-color);
+}
+
+.timeline-year {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.timeline-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.timeline-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .timeline-line {
+    left: 22px;
+  }
+
+  .timeline-item {
+    flex-direction: row !important;
+    padding-left: 70px !important;
+    padding-right: 0 !important;
+  }
+
+  .timeline-dot {
+    left: 22px;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .timeline-left .timeline-card,
+  .timeline-right .timeline-card {
+    text-align: left;
+  }
+}
