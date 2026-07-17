@@ -113,8 +113,8 @@ function App() {
                   }}
                 />
                 <About />
-                <Skills />
                 <Projects />
+                <Skills />
                 <Timeline />
                 <Contact />
                 <Footer />
