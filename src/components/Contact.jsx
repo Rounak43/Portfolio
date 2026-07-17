@@ -52,18 +52,56 @@ const fadeUp = (delay = 0) => ({
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('idle'); // 'idle' | 'success' | 'error'
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Frontend only — simulate submit
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setFormData({ name: '', email: '', message: '' });
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          subject: `New Portfolio Message from ${formData.name}`,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.status === 200 && result.success) {
+        setSubmitStatus('success');
+        setFormData({ name: '', email: '', message: '' });
+      } else {
+        console.error('Web3Forms Error:', result);
+        setSubmitStatus('error');
+      }
+    } catch (err) {
+      console.error('Network Error:', err);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+      // Reset button state after 5 seconds
+      setTimeout(() => {
+        setSubmitStatus('idle');
+      }, 5000);
+    }
   };
 
   return (
@@ -172,11 +210,27 @@ const Contact = () => {
             <motion.button
               type="submit"
               className="form-submit btn-primary"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              style={{ width: '100%', justifyContent: 'center' }}
+              whileHover={{ scale: isSubmitting ? 1 : 1.03 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.97 }}
+              disabled={isSubmitting}
+              style={{ 
+                width: '100%', 
+                justifyContent: 'center', 
+                opacity: isSubmitting ? 0.7 : 1,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              }}
             >
-              {submitted ? '✅ Message Sent!' : <><FiSend /> Send Message</>}
+              {isSubmitting ? (
+                'Sending...'
+              ) : submitStatus === 'success' ? (
+                '✅ Message Sent!'
+              ) : submitStatus === 'error' ? (
+                '❌ Failed to send. Try again.'
+              ) : (
+                <>
+                  <FiSend /> Send Message
+                </>
+              )}
             </motion.button>
           </form>
         </motion.div>

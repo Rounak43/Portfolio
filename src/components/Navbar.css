@@ -5,7 +5,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 72%;
-  max-width: 780px;
+  max-width: 880px;
   z-index: 1000;
   transition: all 0.3s ease;
 }

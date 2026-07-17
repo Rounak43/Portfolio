@@ -34,7 +34,7 @@ const timelineItems = [
   {
     year: '2026',
     title: 'Deep Learning & LLM Applications',
-    description: 'Currently building advanced deep learning models and LLM-powered applications with RAG and Agentic AI.',
+    description: 'Currently learning DL , LLM transformer and LLM pipelines. Making Real World Project using ML , DL and trying to make all without AI so that i will make my coding skill better.',
     color: '#FFB347',
     icon: '🚀',
   },
