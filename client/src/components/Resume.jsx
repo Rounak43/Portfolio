@@ -27,9 +27,11 @@ const Resume = ({ onBack }) => {
         <button className="btn-secondary back-btn" onClick={onBack} aria-label="Back to Dashboard">
           <FiArrowLeft /> Back to Dashboard
         </button>
-        <a 
-          href="/resume.pdf" 
-          target="_blank" 
+        {/* BASE_URL keeps this correct under the /portfolio/ deploy path —
+            a bare "/resume.pdf" 404s on GitHub Pages. */}
+        <a
+          href={`${import.meta.env.BASE_URL}resume.pdf`}
+          target="_blank"
           rel="noopener noreferrer" 
           className="btn-primary view-external-btn"
           aria-label="Open PDF in new tab"
@@ -41,7 +43,7 @@ const Resume = ({ onBack }) => {
       {/* PDF Viewer Container */}
       <div className="pdf-viewer-container glass-card">
         <iframe
-          src="/resume.pdf#toolbar=1"
+          src={`${import.meta.env.BASE_URL}resume.pdf#toolbar=1`}
           title="Rounak Sharma Resume"
           className="pdf-iframe"
         />

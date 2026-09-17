@@ -25,11 +25,17 @@ function resolveServiceAccount() {
 
 // getApps() guards against re-initialising under `node --watch`.
 if (getApps().length === 0) {
-  const serviceAccount = resolveServiceAccount();
-  initializeApp({
-    credential: cert(serviceAccount),
-    projectId: serviceAccount.projectId || serviceAccount.project_id,
-  });
+  if (env.useEmulator) {
+    // The emulator ignores credentials entirely and accepts any project id.
+    initializeApp({ projectId: env.firebase.projectId || 'demo-portfolio' });
+    console.log(`Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`);
+  } else {
+    const serviceAccount = resolveServiceAccount();
+    initializeApp({
+      credential: cert(serviceAccount),
+      projectId: serviceAccount.projectId || serviceAccount.project_id,
+    });
+  }
 }
 
 export const db = getFirestore();

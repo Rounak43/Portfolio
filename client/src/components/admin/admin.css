@@ -440,6 +440,33 @@ body.admin-mode { padding-top: 52px; }
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* ---------- Footer sign-in shortcut ---------- */
+/* Deliberately low-contrast: a visitor should barely notice it. */
+.footer-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  margin-left: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: var(--transition);
+}
+
+.footer-admin-btn:hover {
+  opacity: 1;
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(0, 229, 255, 0.08);
+}
+
 /* ---------- Login ---------- */
 .admin-login-intro {
   margin-bottom: 18px;

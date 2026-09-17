@@ -8,17 +8,16 @@ import { ConfirmDialog } from './admin/Modal';
 import { skillFields } from './admin/contentSchemas';
 import './Skills.css';
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-};
+// Each card animates itself rather than inheriting variants from the grid.
+//
+// The grid used to orchestrate the entrance with staggerChildren and
+// viewport={{ once: true }}. That fires exactly once, so a card added through
+// the admin panel afterwards mounted into the parent's `hidden` state and
+// never received `visible` — it sat in the DOM at opacity 0, looking like the
+// save had failed. Self-animating cards get their own whileInView trigger, and
+// the index delay below reproduces the original stagger.
+const CARD_STAGGER = 0.1;
+const MAX_STAGGER_STEPS = 6;
 
 const Skills = () => {
   const admin = useSectionAdmin('skills');
@@ -39,18 +38,20 @@ const Skills = () => {
         Skills
       </motion.h2>
 
-      <motion.div
-        className="skills-grid"
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: '-50px' }}
-      >
+      <div className="skills-grid">
         {skillCategories.map((category, i) => (
           <motion.div
             key={category.id}
             className={`skill-category glass-card ${admin.isAdmin ? 'has-admin-controls' : ''}`}
-            variants={cardVariants}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{
+              duration: 0.5,
+              ease: 'easeOut',
+              // Capped so a long list does not leave later cards waiting.
+              delay: Math.min(i, MAX_STAGGER_STEPS) * CARD_STAGGER,
+            }}
             whileHover={{
               y: -8,
               boxShadow: `0 20px 40px rgba(0,0,0,0.3), 0 0 25px ${category.color}33`,
@@ -92,7 +93,7 @@ const Skills = () => {
             </div>
           </motion.div>
         ))}
-      </motion.div>
+      </div>
 
       {admin.isAdmin && <AddButton onClick={admin.openCreate}>Add skill category</AddButton>}
 

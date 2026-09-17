@@ -1,9 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiGithub, FiLinkedin, FiHeart } from 'react-icons/fi';
+import { FiGithub, FiLinkedin, FiHeart, FiLock } from 'react-icons/fi';
+
+import { useAuth } from '../context/AuthContext';
 import './Footer.css';
 
 const Footer = () => {
+  const { isAdmin } = useAuth();
+
+  // Reuses the existing #/admin route that AdminLayer already listens on,
+  // so the button is just a shortcut rather than a second sign-in path.
+  const openAdminLogin = () => {
+    window.location.hash = '/admin';
+  };
+
   return (
     <footer className="footer">
       <div className="footer-line" />
@@ -28,7 +38,7 @@ const Footer = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          © 2026 Rounak Sharma · Built with React <FiHeart className="heart-icon" /> 
+          © 2026 Rounak Sharma · Built with React <FiHeart className="heart-icon" />
         </motion.p>
 
         {/* Social Icons */}
@@ -57,6 +67,19 @@ const Footer = () => {
           >
             <FiLinkedin size={20} />
           </a>
+
+          {/* Hidden once signed in — the admin bar carries sign-out from there. */}
+          {!isAdmin && (
+            <button
+              type="button"
+              className="footer-admin-btn"
+              onClick={openAdminLogin}
+              aria-label="Administrator sign in"
+              title="Administrator sign in"
+            >
+              <FiLock size={13} /> Admin
+            </button>
+          )}
         </motion.div>
       </div>
     </footer>

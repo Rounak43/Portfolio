@@ -14,6 +14,13 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   isProd: process.env.NODE_ENV === 'production',
 
+  /**
+   * Set by `firebase emulators:exec`, or by hand for local development. When
+   * present the Admin SDK talks to the local emulator and needs no service
+   * account, which is what makes the API testable without production keys.
+   */
+  useEmulator: Boolean(process.env.FIRESTORE_EMULATOR_HOST),
+
   corsOrigins: list(process.env.CORS_ORIGINS),
   adminEmails: list(process.env.ADMIN_EMAILS).map((email) => email.toLowerCase()),
 
@@ -36,7 +43,8 @@ export function assertEnv() {
   const { serviceAccountBase64, projectId, clientEmail, privateKey } = env.firebase;
   const hasInlineCredentials = projectId && clientEmail && privateKey;
 
-  if (!serviceAccountBase64 && !hasInlineCredentials) {
+  // The emulator authenticates nothing, so a service account is not required.
+  if (!env.useEmulator && !serviceAccountBase64 && !hasInlineCredentials) {
     problems.push(
       'Firebase credentials missing. Set FIREBASE_SERVICE_ACCOUNT_BASE64, or all of ' +
         'FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.'

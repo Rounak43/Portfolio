@@ -13,7 +13,6 @@ import {
   FiChevronRight,
   FiX,
   FiLinkedin,
-  FiBookOpen,
   FiFileText,
   FiArrowLeft,
   FiLayers,
@@ -51,33 +50,37 @@ const itemVariants = {
 };
 
 // Animated Counter for Achievements
+//
+// Only values holding exactly one number are animated. Stripping every
+// non-digit instead would turn "Final Round on 6 Aug 2026" into 62026 and
+// spin a 62,000-iteration timer whose output never matches the original text.
+const COUNTABLE = /^(\D*)(\d{1,4})(\D*)$/;
+const MAX_COUNTABLE = 1000;
+
 const AnimatedCounter = ({ value, duration = 1.5 }) => {
+  const match = COUNTABLE.exec(value);
+  const target = match ? Number(match[2]) : null;
+  const shouldAnimate = target !== null && target > 0 && target <= MAX_COUNTABLE;
+
   const [count, setCount] = useState(0);
-  const numericVal = parseInt(value.replace(/[^0-9]/g, ''), 10);
-  const isNumber = !isNaN(numericVal);
 
   useEffect(() => {
-    if (!isNumber) return;
-    let start = 0;
-    const end = numericVal;
-    if (start === end) return;
+    if (!shouldAnimate) return undefined;
 
-    let totalMiliseconds = duration * 1000;
-    let incrementTime = Math.max(Math.floor(totalMiliseconds / end), 25);
-    
-    let timer = setInterval(() => {
-      start += 1;
-      setCount(start);
-      if (start === end) {
-        clearInterval(timer);
-      }
+    let current = 0;
+    const incrementTime = Math.max(Math.floor((duration * 1000) / target), 25);
+
+    const timer = setInterval(() => {
+      current += 1;
+      setCount(current);
+      if (current >= target) clearInterval(timer);
     }, incrementTime);
 
     return () => clearInterval(timer);
-  }, [numericVal, isNumber, duration]);
+  }, [target, shouldAnimate, duration]);
 
-  if (!isNumber) return value;
-  return value.replace(String(numericVal), String(count));
+  if (!shouldAnimate) return value;
+  return `${match[1]}${count}${match[3]}`;
 };
 
 const CompetitionDetailView = ({
@@ -134,7 +137,10 @@ const CompetitionDetailView = ({
       {/* Hero Glassmorphic Project Card */}
       <div className="odoo-hero-card">
         <div className="odoo-hero-image-bg">
-          <img src={activeComp.images[0]} alt={activeComp.projectName} />
+          {/* A competition may have no gallery images yet. */}
+          {activeComp.images?.length > 0 && (
+            <img src={activeComp.images[0]} alt={activeComp.projectName || activeComp.title} />
+          )}
           <div className="odoo-hero-tint" />
         </div>
         <div className="odoo-hero-content-overlay glass-card">
@@ -149,7 +155,8 @@ const CompetitionDetailView = ({
         <div className="comp-expanded-title-row">
           <h3 className="comp-expanded-title">{activeComp.title}</h3>
           <span className={`comp-status-badge ${activeComp.status.toLowerCase().replace(/[^a-z]/g, '')} blinking-badge`}>
-            {activeComp.statusText}
+            {/* statusText is optional; fall back so the badge is never blank. */}
+            {activeComp.statusText || activeComp.status}
           </span>
         </div>
         <div className="comp-expanded-meta-grid">
@@ -163,7 +170,9 @@ const CompetitionDetailView = ({
             <FiBriefcase /> <span>{activeComp.organizer}</span>
           </div>
           <div className="comp-expanded-meta-item">
-            <FiClock /> <span><strong>{activeComp.id === 'isro-hackathon-2026' ? 'Stage' : 'Virtual Dev'}:</strong> {activeComp.duration}</span>
+            {/* Driven by the data, not a hardcoded id, so competitions added
+                later get a sensible label too. */}
+            <FiClock /> <span><strong>{activeComp.virtualRound ? 'Virtual Dev' : 'Stage'}:</strong> {activeComp.duration}</span>
           </div>
         </div>
       </div>
@@ -680,27 +689,35 @@ const Competitions = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [expandedId, lightboxImage]);
 
-  // Autoplay carousel
+  // Autoplay carousel.
+  //
+  // Advancing via a functional update keeps carouselIndex out of the deps, so
+  // the interval is no longer torn down and recreated on every slide. A
+  // gallery of one image (or none) has nothing to advance to.
   useEffect(() => {
-    if (!activeComp || isHovered) return;
+    const total = activeComp?.images?.length ?? 0;
+    if (total <= 1 || isHovered) return undefined;
 
     const timer = setInterval(() => {
-      handleNextSlide();
+      setCarouselDirection(1);
+      setCarouselIndex((prev) => (prev + 1) % total);
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [activeComp, carouselIndex, isHovered]);
+  }, [activeComp, isHovered]);
 
   // Carousel functions
+  // Guarding on images.length (not just activeComp) matters: with an empty
+  // gallery the modulo-free index maths below would run past the array end.
   const handlePrevSlide = (e) => {
     e.stopPropagation();
-    if (!activeComp) return;
+    if (!activeComp?.images?.length) return;
     setCarouselDirection(-1);
     setCarouselIndex((prev) => (prev === 0 ? activeComp.images.length - 1 : prev - 1));
   };
 
   const handleNextSlide = () => {
-    if (!activeComp) return;
+    if (!activeComp?.images?.length) return;
     setCarouselDirection(1);
     setCarouselIndex((prev) => (prev === activeComp.images.length - 1 ? 0 : prev + 1));
   };
@@ -723,6 +740,7 @@ const Competitions = () => {
 
   const handleTouchEnd = () => {
     if (!touchStart.current || !touchEnd.current) return;
+    if (!activeComp?.images?.length) return;
     const distance = touchStart.current - touchEnd.current;
     if (distance > 50) {
       handleNextSlide();
@@ -867,7 +885,6 @@ const Competitions = () => {
                 <FiArrowLeft size={16} /> Back to Competitions
               </button>
 
-              {activeComp.id === 'odoo-hackathon-2026' || activeComp.id === 'isro-hackathon-2026' ? (
                 <CompetitionDetailView
                   activeComp={activeComp}
                   carouselIndex={carouselIndex}
@@ -882,366 +899,6 @@ const Competitions = () => {
                   handleTouchEnd={handleTouchEnd}
                   setLightboxImage={setLightboxImage}
                 />
-              ) : (
-                <>
-                  {/* Hero Banner */}
-              <div className="comp-hero-banner">
-                <img
-                  src={activeComp.images[0]}
-                  alt={activeComp.title}
-                  className="comp-hero-img"
-                />
-                <div className="comp-hero-overlay" />
-              </div>
-
-              {/* Header */}
-              <div className="comp-expanded-header">
-                <div className="comp-expanded-title-row">
-                  <h3 className="comp-expanded-title">{activeComp.title}</h3>
-                  <span
-                    className={`comp-status-badge ${activeComp.status.toLowerCase().replace(/[^a-z]/g, '')}`}
-                  >
-                    {activeComp.status}
-                  </span>
-                </div>
-                <div className="comp-expanded-meta-grid">
-                  <div className="comp-expanded-meta-item">
-                    <FiCalendar /> <span>{activeComp.date}</span>
-                  </div>
-                  <div className="comp-expanded-meta-item">
-                    <FiMapPin /> <span>{activeComp.location}</span>
-                  </div>
-                  <div className="comp-expanded-meta-item">
-                    <FiBriefcase /> <span>{activeComp.organizer}</span>
-                  </div>
-                  <div className="comp-expanded-meta-item">
-                    <FiClock /> <span>{activeComp.duration}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Image Gallery Carousel */}
-              {activeComp.images && activeComp.images.length > 0 && (
-                <div
-                  className="comp-detail-carousel"
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div
-                    className="comp-carousel-inner"
-                    onClick={() => setLightboxImage(activeComp.images[carouselIndex])}
-                  >
-                    <AnimatePresence initial={false} custom={carouselDirection}>
-                      <motion.img
-                        key={carouselIndex}
-                        src={activeComp.images[carouselIndex]}
-                        alt={`${activeComp.title} Gallery ${carouselIndex + 1}`}
-                        className="comp-carousel-slide"
-                        custom={carouselDirection}
-                        variants={slideVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                      />
-                    </AnimatePresence>
-                  </div>
-
-                  <button className="comp-carousel-btn prev" onClick={(e) => handlePrevSlide(e)}>
-                    <FiChevronLeft size={20} />
-                  </button>
-                  <button className="comp-carousel-btn next" onClick={handleNextSlide}>
-                    <FiChevronRight size={20} />
-                  </button>
-
-                  <div className="comp-carousel-dots">
-                    {activeComp.images.map((_, idx) => (
-                      <button
-                        key={idx}
-                        className={`comp-carousel-dot ${idx === carouselIndex ? 'active' : ''}`}
-                        onClick={(e) => handleDotClick(e, idx)}
-                        aria-label={`Go to slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Master-Detail Columns */}
-              <div className="comp-expanded-grid">
-                {/* Main Content (Left) */}
-                <div className="comp-expanded-main">
-                  {/* About */}
-                  <div className="comp-detail-block">
-                    <h4 className="comp-detail-title-line">
-                      <FiInfo /> About Competition
-                    </h4>
-                    <p className="comp-detail-desc-text">
-                      <strong>The Hackathon:</strong> {activeComp.description}
-                    </p>
-                    <p className="comp-detail-desc-text">
-                      <strong>Problem Statement:</strong> {activeComp.problemStatement}
-                    </p>
-                    <p className="comp-detail-desc-text">
-                      <strong>Theme / Objective:</strong> Building a highly optimized solution to automate, digitize and parse complex workflows under strict time bounds.
-                    </p>
-                  </div>
-
-                  {/* Solution */}
-                  <div className="comp-detail-block">
-                    <h4 className="comp-detail-title-line">
-                      <FiLayers /> Our Solution
-                    </h4>
-                    <p className="comp-detail-desc-text">{activeComp.solution}</p>
-                  </div>
-
-                  {/* Architecture */}
-                  {activeComp.architectureImage && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiCpu /> Architecture & System Design
-                      </h4>
-                      <div className="comp-architecture-wrapper">
-                        <div
-                          className="comp-architecture-img-container"
-                          onClick={() => setLightboxImage(activeComp.architectureImage)}
-                          style={{ cursor: 'zoom-in' }}
-                        >
-                          <img
-                            src={activeComp.architectureImage}
-                            alt="System Architecture Diagram"
-                            className="comp-architecture-img"
-                          />
-                        </div>
-                        <p className="comp-detail-desc-text">
-                          Features modular architecture with client-side UI states decoupled from backend worker controllers. Standard RESTful channels support fast communications and data persistence.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* My Contribution */}
-                  <div className="comp-detail-block">
-                    <h4 className="comp-detail-title-line">
-                      <FiAward /> My Contribution
-                    </h4>
-                    <div className="comp-contribution-card glass-card">
-                      <p className="comp-detail-desc-text" style={{ color: 'var(--text)' }}>
-                        {activeComp.myContribution}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Challenges Faced */}
-                  {activeComp.challenges && activeComp.challenges.length > 0 && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiActivity /> Challenges Faced
-                      </h4>
-                      <div className="comp-challenges-list">
-                        {activeComp.challenges.map((chal, idx) => (
-                          <div key={idx} className="comp-challenge-card">
-                            <span className="comp-challenge-title">{chal.title}</span>
-                            <p className="comp-challenge-desc">{chal.desc}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* What I Learned */}
-                  {activeComp.learnings && activeComp.learnings.length > 0 && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiBookOpen /> What I Learned
-                      </h4>
-                      <div className="comp-learnings-list">
-                        {activeComp.learnings.map((learn, idx) => (
-                          <div key={idx} className="comp-learning-item">
-                            <span className="comp-learning-icon">✓</span>
-                            <span className="comp-learning-text">{learn}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Sidebar (Right) */}
-                <div className="comp-expanded-sidebar">
-                  {/* Statistics */}
-                  {activeComp.statistics && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiActivity /> Statistics
-                      </h4>
-                      <div className="comp-sidebar-stats">
-                        {activeComp.statistics.map((stat, idx) => (
-                          <div key={idx} className="comp-sidebar-stat-card">
-                            <span className="comp-sidebar-stat-val">{stat.value}</span>
-                            <span className="comp-sidebar-stat-lbl">{stat.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Achievements */}
-                  {activeComp.achievement && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiAward /> Achievement
-                      </h4>
-                      <div className="comp-achievement-card">
-                        <div className="comp-achievement-icon">🏆</div>
-                        <div className="comp-achievement-info">
-                          <span className="comp-achievement-badge">
-                            {activeComp.achievement.badge}
-                          </span>
-                          <span className="comp-achievement-title">
-                            {activeComp.achievement.title}
-                          </span>
-                          <span className="comp-achievement-details">
-                            {activeComp.achievement.details}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Team Members */}
-                  {activeComp.teamMembers && activeComp.teamMembers.length > 0 && (
-                    <div className="comp-detail-block">
-                      <h4 className="comp-detail-title-line">
-                        <FiUsers /> Team Members
-                      </h4>
-                      <div className="comp-team-list">
-                        {activeComp.teamMembers.map((member, idx) => (
-                          <div key={idx} className="comp-team-card">
-                            <div className="comp-team-header">
-                              <img
-                                src={member.image}
-                                alt={member.name}
-                                className="comp-team-avatar"
-                              />
-                              <div className="comp-team-basic">
-                                <span className="comp-team-name">{member.name}</span>
-                                <span className="comp-team-role">{member.role}</span>
-                              </div>
-                              <div className="comp-team-links">
-                                <a
-                                  href={member.github}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="comp-team-link"
-                                  aria-label="GitHub Link"
-                                >
-                                  <FiGithub />
-                                </a>
-                                {member.linkedin && (
-                                  <a
-                                    href={member.linkedin}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="comp-team-link"
-                                    aria-label="LinkedIn Link"
-                                  >
-                                    <FiLinkedin />
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                            <p className="comp-team-contribution">
-                              <strong>Contribution:</strong> {member.contribution}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Technologies Used */}
-                  <div className="comp-detail-block">
-                    <h4 className="comp-detail-title-line">
-                      <FiCpu /> Technologies Used
-                    </h4>
-                    <div className="comp-badge-cloud">
-                      {activeComp.technologies.map((tech, idx) => (
-                        <motion.span
-                          key={tech}
-                          className="comp-tech-badge"
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ duration: 0.3, delay: idx * 0.04 }}
-                        >
-                          {tech}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Resources */}
-                  <div className="comp-detail-block">
-                    <h4 className="comp-detail-title-line">
-                      <FiFilePlus /> Resources
-                    </h4>
-                    <div className="comp-resources-list">
-                      {activeComp.github && (
-                        <a
-                          href={activeComp.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="comp-resource-btn github"
-                        >
-                          <FiGithub /> GitHub Repository
-                        </a>
-                      )}
-                      {activeComp.presentation && (
-                        <a
-                          href={activeComp.presentation}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="comp-resource-btn github"
-                        >
-                          <FiFileText /> Presentation
-                        </a>
-                      )}
-                      {activeComp.demo && (
-                        <a
-                          href={activeComp.demo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="comp-resource-btn action"
-                        >
-                          <FiExternalLink /> Demo Video / Site
-                        </a>
-                      )}
-                      {activeComp.certificate && (
-                        <a
-                          href={activeComp.certificate}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="comp-resource-btn github"
-                        >
-                          <FiAward /> View Certificate
-                        </a>
-                      )}
-                      <a
-                        href="https://linkedin.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="comp-resource-btn github"
-                      >
-                        <FiLinkedin /> LinkedIn Post
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
