@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import {
   FiMail, FiLinkedin, FiGithub, FiGlobe, FiMapPin, FiSend,
 } from 'react-icons/fi';
+
+import { api } from '../api/client';
 import './Contact.css';
 
 const contactLinks = [
@@ -51,7 +53,8 @@ const fadeUp = (delay = 0) => ({
 });
 
 const Contact = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  // `website` is the honeypot — hidden from real users, filled in by bots.
+  const [formData, setFormData] = useState({ name: '', email: '', message: '', website: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('idle'); // 'idle' | 'success' | 'error'
 
@@ -67,33 +70,18 @@ const Contact = () => {
     setSubmitStatus('idle');
 
     try {
-      const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          access_key: accessKey,
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-          subject: `New Portfolio Message from ${formData.name}`,
-        }),
+      // Stored in Firestore by the API and read from the admin inbox.
+      await api.postPublic('/messages', {
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        website: formData.website,
       });
 
-      const result = await response.json();
-
-      if (response.status === 200 && result.success) {
-        setSubmitStatus('success');
-        setFormData({ name: '', email: '', message: '' });
-      } else {
-        console.error('Web3Forms Error:', result);
-        setSubmitStatus('error');
-      }
+      setSubmitStatus('success');
+      setFormData({ name: '', email: '', message: '', website: '' });
     } catch (err) {
-      console.error('Network Error:', err);
+      console.error('Contact submission failed:', err);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -206,6 +194,18 @@ const Contact = () => {
                 required
               />
             </div>
+
+            {/* Honeypot: off-screen and skipped by keyboard and screen readers. */}
+            <input
+              type="text"
+              name="website"
+              value={formData.website}
+              onChange={handleChange}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+            />
 
             <motion.button
               type="submit"

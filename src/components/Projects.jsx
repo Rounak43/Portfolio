@@ -1,51 +1,19 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FiGithub, FiExternalLink } from 'react-icons/fi';
-import project1 from '../assets/project1.jpg';
-import project2 from '../assets/project2.jpg';
-import project3 from '../assets/project3.jpg';
-import project4 from '../assets/project4.jpg';
-import './Projects.css';
 
-const projects = [
-  {
-    id: 1,
-    title: 'AI Knee MRI Analyzer',
-    description:
-      'Recently started Deep Learning based system for detecting ACL tears, meniscus injuries and knee abnormalities from MRI scans with high accuracy using CNNs.',
-    image: project1,
-    tech: ['Python', 'TensorFlow', 'OpenCV', 'Flask'],
-    github: 'https://github.com/Rounak43/AI-Knee-MRI-Analyzer',
-    demo: '',
-    color: '#00E5FF',
-    status: 'Recently Started',
-  },
-  {
-    id: 2,
-    title: 'Smart Placement Performance Platform',
-    description:
-      'AI-powered placement preparation platform featuring roadmap generation, resume analysis, progress tracking and interview preparation tools.',
-    image: project2,
-    tech: ['React', 'Node.js',  'Firebase'],
-    github: 'https://github.com/Rounak43/Smart-Placement-Assistant',
-    demo: 'https://agent-69b05b607189ba8b95ba5d--zesty-druid-0fa1ed.netlify.app/',
-    color: '#7B61FF',
-  },
-  {
-    id: 3,
-    title: 'Automated Active Recall Generator',
-    description:
-      'Generates flashcards, quizzes and summaries automatically from PDFs using NLP and Transformers for smarter studying.',
-    image: project3,
-    tech: ['React', 'FastAPI', 'Transformers', 'HuggingFace'],
-    github: 'https://github.com/Rounak43/AI-Powered-Active-Recall-Material-Generator',
-    demo: 'https://summarizer-api-frontend-two.vercel.app/',
-    color: '#00FFB2',
-  },
-];
+import { resolveImage } from '../lib/assets';
+import { useSectionAdmin } from './admin/useSectionAdmin';
+import { ItemControls, AddButton } from './admin/ItemControls';
+import { EntityForm } from './admin/EntityForm';
+import { ConfirmDialog } from './admin/Modal';
+import { projectFields } from './admin/contentSchemas';
+import './Projects.css';
 
 const Projects = () => {
   const [hoveredId, setHoveredId] = useState(null);
+  const admin = useSectionAdmin('projects');
+  const projects = admin.items;
 
   return (
     <section id="projects" className="projects-section">
@@ -66,7 +34,7 @@ const Projects = () => {
         {projects.map((project, i) => (
           <motion.div
             key={project.id}
-            className="project-card glass-card"
+            className={`project-card glass-card ${admin.isAdmin ? 'has-admin-controls' : ''}`}
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
@@ -76,10 +44,22 @@ const Projects = () => {
             whileHover={{ y: -12 }}
             style={{ '--project-color': project.color }}
           >
+            {admin.isAdmin && (
+              <ItemControls
+                label={project.title}
+                onEdit={() => admin.openEdit(project)}
+                onDelete={() => admin.requestDelete(project)}
+                onMoveUp={() => admin.move(i, -1)}
+                onMoveDown={() => admin.move(i, 1)}
+                canMoveUp={i > 0}
+                canMoveDown={i < projects.length - 1}
+              />
+            )}
+
             {/* Image */}
             <div className="project-image-wrapper">
               <img
-                src={project.image}
+                src={resolveImage(project.image)}
                 alt={project.title}
                 className={`project-image ${hoveredId === project.id ? 'zoomed' : ''}`}
               />
@@ -109,29 +89,62 @@ const Projects = () => {
 
               {/* Buttons */}
               <div className="project-buttons">
-                <a
-                  href={project.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-btn project-btn-github"
-                  aria-label={`GitHub repository for ${project.title}`}
-                >
-                  <FiGithub /> GitHub
-                </a>
-                <a
-                  href={project.demo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-btn project-btn-demo"
-                  aria-label={`Live demo for ${project.title}`}
-                >
-                  <FiExternalLink /> Live Demo
-                </a>
+                {project.github && (
+                  <a
+                    href={project.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="project-btn project-btn-github"
+                    aria-label={`GitHub repository for ${project.title}`}
+                  >
+                    <FiGithub /> GitHub
+                  </a>
+                )}
+                {/* Hidden when there is no demo yet, rather than linking nowhere. */}
+                {project.demo && (
+                  <a
+                    href={project.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="project-btn project-btn-demo"
+                    aria-label={`Live demo for ${project.title}`}
+                  >
+                    <FiExternalLink /> Live Demo
+                  </a>
+                )}
               </div>
             </div>
           </motion.div>
         ))}
       </div>
+
+      {admin.isAdmin && <AddButton onClick={admin.openCreate}>Add project</AddButton>}
+
+      <AnimatePresence>
+        {admin.form && (
+          <EntityForm
+            key="project-form"
+            title={admin.form.mode === 'edit' ? 'Edit project' : 'Add project'}
+            fields={projectFields}
+            item={admin.form.item}
+            onSubmit={admin.submitForm}
+            onClose={admin.closeForm}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {admin.pendingDelete && (
+          <ConfirmDialog
+            key="project-delete"
+            title="Delete project"
+            message={`Permanently delete "${admin.pendingDelete.title}"? This cannot be undone.`}
+            onConfirm={admin.confirmDelete}
+            onCancel={admin.cancelDelete}
+            busy={admin.deleting}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };

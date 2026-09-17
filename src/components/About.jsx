@@ -1,5 +1,11 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiEdit3 } from 'react-icons/fi';
+
+import { useAuth } from '../context/AuthContext';
+import { useContent } from '../context/ContentContext';
+import { EntityForm } from './admin/EntityForm';
+import { aboutFields } from './admin/contentSchemas';
 import './About.css';
 
 const fadeUp = {
@@ -11,28 +17,29 @@ const fadeUp = {
   }),
 };
 
-const cards = [
-  {
-    icon: '🎯',
-    title: 'Full Stack Development',
-    tags: ['React', 'JavaScript', 'Node.js', 'Express', 'MongoDB'],
-    color: 'var(--primary)',
-  },
-  {
-    icon: '🤖',
-    title: 'Artificial Intelligence',
-    tags: ['Machine Learning', 'Deep Learning', 'Computer Vision', 'NLP', 'Large Language Models'],
-    color: 'var(--secondary)',
-  },
-  {
-    icon: '🚀',
-    title: 'Currently Learning',
-    tags: ['MLOps', 'Agentic AI', 'RAG', 'Docker', 'Cloud Deployment'],
-    color: '#00FFB2',
-  },
-];
+/**
+ * Renders `**text**` as the cyan highlight span the original markup used, so
+ * the emphasis survives the move out of hardcoded JSX and into editable text.
+ */
+function renderHighlighted(paragraph) {
+  return paragraph.split(/(\*\*[^*]+\*\*)/g).map((part, index) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <span className="highlight" key={index}>
+        {part.slice(2, -2)}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
 
 const About = () => {
+  const { isAdmin } = useAuth();
+  const { about, saveAbout } = useContent();
+  const [editing, setEditing] = useState(false);
+
+  const { paragraphs, cards } = about.data;
+
   return (
     <section id="about" className="about-section">
       {/* Background orbs */}
@@ -60,24 +67,11 @@ const About = () => {
           viewport={{ once: true }}
         >
           <div className="about-bio-inner">
-            <p className="about-text">
-              I am <span className="highlight">Rounak Sharma</span>, a passionate{' '}
-              <span className="highlight">Full Stack Developer</span> and{' '}
-              <span className="highlight">AI/ML Engineer</span> currently pursuing Computer Science
-              with specialization in <span className="highlight">Artificial Intelligence & Machine Learning</span>.
-            </p>
-            <p className="about-text">
-              I enjoy building scalable web applications, AI-powered products, NLP systems, and deep
-              learning projects. I love solving real-world problems through technology and continuously
-              learning modern frameworks and tools.
-            </p>
-            <p className="about-text">
-              I am actively looking for{' '}
-              <span className="highlight">Software Development</span>,{' '}
-              <span className="highlight">AI Engineer</span>,{' '}
-              <span className="highlight">Machine Learning Engineer</span>, and{' '}
-              <span className="highlight">Full Stack Developer</span> opportunities.
-            </p>
+            {paragraphs.map((paragraph, index) => (
+              <p className="about-text" key={index}>
+                {renderHighlighted(paragraph)}
+              </p>
+            ))}
           </div>
         </motion.div>
 
@@ -106,6 +100,27 @@ const About = () => {
           ))}
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="admin-add-row">
+          <button className="admin-add-btn" onClick={() => setEditing(true)}>
+            <FiEdit3 size={16} /> Edit About section
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {editing && (
+          <EntityForm
+            key="about-form"
+            title="Edit About section"
+            fields={aboutFields}
+            item={about.data}
+            onSubmit={saveAbout}
+            onClose={() => setEditing(false)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };

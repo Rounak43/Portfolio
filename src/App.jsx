@@ -14,6 +14,10 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import Resume from './components/Resume';
 
+import { AuthProvider } from './context/AuthContext';
+import { ContentProvider } from './context/ContentContext';
+import { AdminLayer } from './components/admin/AdminLayer';
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [showResume, setShowResume] = useState(false);
@@ -146,4 +150,17 @@ function App() {
   );
 }
 
-export default App;
+/**
+ * Auth and content wrap the whole app so any section can read live data, and
+ * AdminLayer sits above it to host the #/admin login and the admin bar.
+ */
+export default function AppRoot() {
+  return (
+    <AuthProvider>
+      <ContentProvider>
+        <AdminLayer />
+        <App />
+      </ContentProvider>
+    </AuthProvider>
+  );
+}

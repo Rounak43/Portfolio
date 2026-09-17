@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// The Express API uses the Admin SDK, which bypasses these rules entirely.
+// They exist to lock down direct browser access to Firestore, so the only
+// write path into your content is the authenticated API.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Public content: anyone may read, only an admin claim may write.
+    match /projects/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /competitions/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /skills/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /timeline/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /site/{id}       { allow read: if true; allow write: if isAdmin(); }
+
+    // Contact submissions are never publicly readable — they hold visitor
+    // email addresses. Writes go through the API, not the browser.
+    match /messages/{id}   { allow read, write: if isAdmin(); }
+
+    match /{document=**}   { allow read, write: if false; }
+  }
+}

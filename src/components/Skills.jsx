@@ -1,51 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import './Skills.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const skillCategories = [
-  {
-    name: 'Frontend',
-    icon: '🎨',
-    color: '#00E5FF',
-    skills: ['React', 'JavaScript', 'HTML5', 'CSS3'],
-  },
-  {
-    name: 'Backend',
-    icon: '⚙️',
-    color: '#7B61FF',
-    skills: ['Node.js', 'Express.js', 'REST API'],
-  },
-  {
-    name: 'Database',
-    icon: '🗄️',
-    color: '#00FFB2',
-    skills: ['MongoDB', 'Firebase'],
-  },
-  {
-    name: 'Programming',
-    icon: '💻',
-    color: '#FF6B6B',
-    skills: ['Python', 'Java', 'JavaScript'],
-  },
-  {
-    name: 'AI / ML',
-    icon: '🧠',
-    color: '#00E5FF',
-    skills: ['Machine Learning', 'Deep Learning', 'TensorFlow', 'PyTorch', 'Scikit-Learn'],
-  },
-  {
-    name: 'NLP',
-    icon: '📝',
-    color: '#7B61FF',
-    skills: ['Transformers', 'spaCy', 'NLTK', 'Hugging Face'],
-  },
-  {
-    name: 'Tools',
-    icon: '🛠️',
-    color: '#FFB347',
-    skills: ['Git', 'GitHub', 'VS Code', 'Postman', 'Docker'],
-  },
-];
+import { useSectionAdmin } from './admin/useSectionAdmin';
+import { ItemControls, AddButton } from './admin/ItemControls';
+import { EntityForm } from './admin/EntityForm';
+import { ConfirmDialog } from './admin/Modal';
+import { skillFields } from './admin/contentSchemas';
+import './Skills.css';
 
 const containerVariants = {
   hidden: {},
@@ -60,6 +21,9 @@ const cardVariants = {
 };
 
 const Skills = () => {
+  const admin = useSectionAdmin('skills');
+  const skillCategories = admin.items;
+
   return (
     <section id="skills" className="skills-section">
       <div className="skills-orb-1" />
@@ -82,10 +46,10 @@ const Skills = () => {
         whileInView="visible"
         viewport={{ once: true, margin: '-50px' }}
       >
-        {skillCategories.map((category) => (
+        {skillCategories.map((category, i) => (
           <motion.div
-            key={category.name}
-            className="skill-category glass-card"
+            key={category.id}
+            className={`skill-category glass-card ${admin.isAdmin ? 'has-admin-controls' : ''}`}
             variants={cardVariants}
             whileHover={{
               y: -8,
@@ -94,6 +58,18 @@ const Skills = () => {
             }}
             style={{ '--cat-color': category.color }}
           >
+            {admin.isAdmin && (
+              <ItemControls
+                label={category.name}
+                onEdit={() => admin.openEdit(category)}
+                onDelete={() => admin.requestDelete(category)}
+                onMoveUp={() => admin.move(i, -1)}
+                onMoveDown={() => admin.move(i, 1)}
+                canMoveUp={i > 0}
+                canMoveDown={i < skillCategories.length - 1}
+              />
+            )}
+
             <div className="skill-cat-header">
               <span className="skill-cat-icon">{category.icon}</span>
               <h3 className="skill-cat-name">{category.name}</h3>
@@ -117,6 +93,34 @@ const Skills = () => {
           </motion.div>
         ))}
       </motion.div>
+
+      {admin.isAdmin && <AddButton onClick={admin.openCreate}>Add skill category</AddButton>}
+
+      <AnimatePresence>
+        {admin.form && (
+          <EntityForm
+            key="skill-form"
+            title={admin.form.mode === 'edit' ? 'Edit skill category' : 'Add skill category'}
+            fields={skillFields}
+            item={admin.form.item}
+            onSubmit={admin.submitForm}
+            onClose={admin.closeForm}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {admin.pendingDelete && (
+          <ConfirmDialog
+            key="skill-delete"
+            title="Delete skill category"
+            message={`Permanently delete "${admin.pendingDelete.name}" and all its skills? This cannot be undone.`}
+            onConfirm={admin.confirmDelete}
+            onCancel={admin.cancelDelete}
+            busy={admin.deleting}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };

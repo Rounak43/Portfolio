@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiMapPin,
@@ -15,7 +15,6 @@ import {
   FiLinkedin,
   FiBookOpen,
   FiFileText,
-  FiCheckCircle,
   FiArrowLeft,
   FiLayers,
   FiActivity,
@@ -27,7 +26,12 @@ import {
   FiArrowRight,
   FiGlobe,
 } from 'react-icons/fi';
-import { competitionsData } from '../data/competitions';
+import { resolveImage } from '../lib/assets';
+import { useSectionAdmin } from './admin/useSectionAdmin';
+import { ItemControls, AddButton } from './admin/ItemControls';
+import { EntityForm } from './admin/EntityForm';
+import { ConfirmDialog } from './admin/Modal';
+import { competitionFields } from './admin/contentSchemas';
 import './Competitions.css';
 
 // Framer Motion presets
@@ -610,6 +614,28 @@ const Competitions = () => {
   const touchStart = useRef(0);
   const touchEnd = useRef(0);
 
+  const admin = useSectionAdmin('competitions');
+
+  // Resolve every image reference once, so the detail layout below keeps using
+  // `activeComp.images[n]` and `member.image` exactly as it did before.
+  // The raw records stay in `admin.items` — the edit form must receive those,
+  // or saving would write build-hashed URLs over the `asset:` references.
+  const competitionsData = useMemo(
+    () =>
+      admin.items.map((comp) => ({
+        ...comp,
+        images: (comp.images || []).map((image) => resolveImage(image)),
+        teamMembers: (comp.teamMembers || []).map((member) => ({
+          ...member,
+          image: resolveImage(member.image),
+        })),
+        architectureImage: comp.architectureImage
+          ? resolveImage(comp.architectureImage)
+          : undefined,
+      })),
+    [admin.items]
+  );
+
   const activeComp = competitionsData.find((c) => c.id === expandedId);
 
   // Scroll to section when expanding or collapsing
@@ -749,7 +775,9 @@ const Competitions = () => {
 
       <div style={{ position: 'relative', minHeight: '400px' }}>
         <AnimatePresence mode="wait">
-          {!expandedId ? (
+          {/* activeComp can vanish if the expanded item is deleted, so fall
+              back to the grid rather than rendering against undefined. */}
+          {!expandedId || !activeComp ? (
             /* Master View Grid */
             <motion.div
               key="grid"
@@ -759,14 +787,26 @@ const Competitions = () => {
               animate="visible"
               exit="hidden"
             >
-              {competitionsData.map((comp) => (
+              {competitionsData.map((comp, i) => (
                 <motion.div
                   key={comp.id}
                   layoutId={`comp-card-container-${comp.id}`}
-                  className="competition-card glass-card"
+                  className={`competition-card glass-card ${admin.isAdmin ? 'has-admin-controls' : ''}`}
                   variants={itemVariants}
                   whileHover={{ y: -6 }}
                 >
+                  {admin.isAdmin && (
+                    <ItemControls
+                      label={comp.title}
+                      onEdit={() => admin.openEdit(admin.items[i])}
+                      onDelete={() => admin.requestDelete(admin.items[i])}
+                      onMoveUp={() => admin.move(i, -1)}
+                      onMoveDown={() => admin.move(i, 1)}
+                      canMoveUp={i > 0}
+                      canMoveDown={i < competitionsData.length - 1}
+                    />
+                  )}
+
                   <div className="comp-header">
                     <div className="comp-icon-title">
                       <div className="comp-icon">
@@ -1206,6 +1246,36 @@ const Competitions = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {admin.isAdmin && !expandedId && (
+        <AddButton onClick={admin.openCreate}>Add competition</AddButton>
+      )}
+
+      <AnimatePresence>
+        {admin.form && (
+          <EntityForm
+            key="competition-form"
+            title={admin.form.mode === 'edit' ? 'Edit competition' : 'Add competition'}
+            fields={competitionFields}
+            item={admin.form.item}
+            onSubmit={admin.submitForm}
+            onClose={admin.closeForm}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {admin.pendingDelete && (
+          <ConfirmDialog
+            key="competition-delete"
+            title="Delete competition"
+            message={`Permanently delete "${admin.pendingDelete.title}"? This cannot be undone.`}
+            onConfirm={admin.confirmDelete}
+            onCancel={admin.cancelDelete}
+            busy={admin.deleting}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Fullscreen Lightbox Overlay */}
       <AnimatePresence>

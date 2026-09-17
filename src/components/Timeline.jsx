@@ -1,46 +1,17 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+import { useSectionAdmin } from './admin/useSectionAdmin';
+import { ItemControls, AddButton } from './admin/ItemControls';
+import { EntityForm } from './admin/EntityForm';
+import { ConfirmDialog } from './admin/Modal';
+import { timelineFields } from './admin/contentSchemas';
 import './Timeline.css';
 
-const timelineItems = [
-  {
-    year: '2023',
-    title: 'Started Web Development',
-    description: 'Began learning HTML, CSS, JavaScript and the foundations of web development.',
-    color: '#00E5FF',
-    icon: '🌐',
-  },
-  {
-    year: '2024',
-    title: 'Learned MERN Stack',
-    description: 'Learned MongoDB, Express.js, React, and Node.js to build full-stack applications.',
-    color: '#7B61FF',
-    icon: '⚡',
-  },
-  {
-    year: '2025',
-    title: 'Started AI & Machine Learning',
-    description: 'Dived into Machine Learning, TensorFlow, PyTorch and classical ML algorithms.',
-    color: '#00FFB2',
-    icon: '🧠',
-  },
-  {
-    year: '2025',
-    title: 'Built NLP Projects',
-    description: 'Developed NLP systems using Transformers, Hugging Face, spaCy and NLTK.',
-    color: '#FF6B6B',
-    icon: '📝',
-  },
-  {
-    year: '2026',
-    title: 'Deep Learning & LLM Applications',
-    description: 'Currently learning DL , LLM transformer and LLM pipelines. Making Real World Project using ML , DL and trying to make all without AI so that i will make my coding skill better.',
-    color: '#FFB347',
-    icon: '🚀',
-  },
-];
-
 const Timeline = () => {
+  const admin = useSectionAdmin('timeline');
+  const timelineItems = admin.items;
+
   return (
     <section id="timeline" className="timeline-section">
       <div className="timeline-orb-1" />
@@ -68,7 +39,7 @@ const Timeline = () => {
 
         {timelineItems.map((item, i) => (
           <motion.div
-            key={`${item.year}-${i}`}
+            key={item.id}
             className={`timeline-item ${i % 2 === 0 ? 'timeline-left' : 'timeline-right'}`}
             initial={{ opacity: 0, x: i % 2 === 0 ? -60 : 60 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -82,10 +53,22 @@ const Timeline = () => {
 
             {/* Card */}
             <motion.div
-              className="timeline-card glass-card"
+              className={`timeline-card glass-card ${admin.isAdmin ? 'has-admin-controls' : ''}`}
               whileHover={{ scale: 1.03, boxShadow: `0 20px 40px rgba(0,0,0,0.3), 0 0 20px ${item.color}33` }}
               style={{ '--t-color': item.color }}
             >
+              {admin.isAdmin && (
+                <ItemControls
+                  label={item.title}
+                  onEdit={() => admin.openEdit(item)}
+                  onDelete={() => admin.requestDelete(item)}
+                  onMoveUp={() => admin.move(i, -1)}
+                  onMoveDown={() => admin.move(i, 1)}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < timelineItems.length - 1}
+                />
+              )}
+
               <div className="timeline-year" style={{ color: item.color }}>
                 {item.year}
               </div>
@@ -95,6 +78,34 @@ const Timeline = () => {
           </motion.div>
         ))}
       </div>
+
+      {admin.isAdmin && <AddButton onClick={admin.openCreate}>Add timeline entry</AddButton>}
+
+      <AnimatePresence>
+        {admin.form && (
+          <EntityForm
+            key="timeline-form"
+            title={admin.form.mode === 'edit' ? 'Edit timeline entry' : 'Add timeline entry'}
+            fields={timelineFields}
+            item={admin.form.item}
+            onSubmit={admin.submitForm}
+            onClose={admin.closeForm}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {admin.pendingDelete && (
+          <ConfirmDialog
+            key="timeline-delete"
+            title="Delete timeline entry"
+            message={`Permanently delete "${admin.pendingDelete.title}"? This cannot be undone.`}
+            onConfirm={admin.confirmDelete}
+            onCancel={admin.cancelDelete}
+            busy={admin.deleting}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };
