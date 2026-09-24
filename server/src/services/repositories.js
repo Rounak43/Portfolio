@@ -13,4 +13,5 @@ export const messagesRepo = createRepository('messages', { label: 'Message' });
 export const aboutRepo = createSingletonRepository('site', 'about', {
   paragraphs: [],
   cards: [],
+  resumeUrl: '',
 });

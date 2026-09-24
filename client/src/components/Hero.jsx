@@ -3,10 +3,20 @@ import { motion } from 'framer-motion';
 import { TypeAnimation } from 'react-type-animation';
 import { FiDownload, FiEye, FiChevronDown } from 'react-icons/fi';
 import profileImg from '../assets/profile.jpg';
+import { useContent } from '../context/ContentContext';
+import { resumeDownloadUrl } from '../lib/resume';
 import './Hero.css';
 
-const Hero = ({ onShowResume }) => {
+const Hero = () => {
   const canvasRef = useRef(null);
+  const { about } = useContent();
+
+  // BASE_URL keeps the bundled copy correct under the /portfolio/ deploy
+  // path — a bare "/resume.pdf" 404s on GitHub Pages.
+  const resumeHref = resumeDownloadUrl(
+    about.data?.resumeUrl,
+    `${import.meta.env.BASE_URL}resume.pdf`
+  );
 
   // Particle background
   useEffect(() => {
@@ -151,13 +161,18 @@ const Hero = ({ onShowResume }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.9 }}
         >
-          <button
-            onClick={onShowResume}
+          {/* No target="_blank": both the Drive download endpoint and the
+              bundled PDF respond with an attachment, so the browser saves the
+              file without navigating away or flashing an empty tab. */}
+          <a
+            href={resumeHref}
+            download="Rounak_Sharma_Resume.pdf"
+            rel="noopener"
             className="btn-primary"
-            aria-label="View Resume"
+            aria-label="Download Resume"
           >
-            <FiDownload /> View Resume
-          </button>
+            <FiDownload /> Resume
+          </a>
           <a
             href="#projects"
             className="btn-secondary"

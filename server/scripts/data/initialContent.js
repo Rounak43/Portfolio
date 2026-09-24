@@ -122,6 +122,9 @@ export const timeline = [
 ];
 
 export const about = {
+  // Paste the Google Drive share link for the CV here, or set it from the
+  // admin bar's About form. Blank falls back to the bundled public/resume.pdf.
+  resumeUrl: '',
   paragraphs: [
     'I am **Rounak Sharma**, a passionate **Full Stack Developer** and **AI/ML Engineer** currently pursuing Computer Science with specialization in **Artificial Intelligence & Machine Learning**.',
     'I enjoy building scalable web applications, AI-powered products, NLP systems, and deep learning projects. I love solving real-world problems through technology and continuously learning modern frameworks and tools.',

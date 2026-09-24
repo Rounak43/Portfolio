@@ -125,6 +125,9 @@ export const fallbackTimeline = [
 
 /** `**bold**` spans render as the cyan highlight the original markup used. */
 export const fallbackAbout = {
+  // Blank so the Hero falls back to the bundled public/resume.pdf until an
+  // admin sets a Drive link.
+  resumeUrl: '',
   paragraphs: [
     'I am **Rounak Sharma**, a passionate **Full Stack Developer** and **AI/ML Engineer** currently pursuing Computer Science with specialization in **Artificial Intelligence & Machine Learning**.',
     'I enjoy building scalable web applications, AI-powered products, NLP systems, and deep learning projects. I love solving real-world problems through technology and continuously learning modern frameworks and tools.',

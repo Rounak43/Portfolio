@@ -78,6 +78,16 @@ export const timelineFields = [
 
 export const aboutFields = [
   {
+    name: 'resumeUrl',
+    label: 'Resume link',
+    placeholder: 'https://drive.google.com/file/d/…/view',
+    help:
+      'Google Drive share link for your CV, set to "Anyone with the link". ' +
+      'The Hero button rewrites it to a direct download, so visitors get the ' +
+      'file rather than a Drive preview. Leave blank to serve the bundled ' +
+      'public/resume.pdf instead.',
+  },
+  {
     name: 'paragraphs',
     label: 'Bio paragraphs',
     type: 'stringList',

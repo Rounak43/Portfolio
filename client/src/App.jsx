@@ -12,7 +12,6 @@ import Competitions from './components/Competitions';
 import Timeline from './components/Timeline';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-import Resume from './components/Resume';
 
 import { AuthProvider } from './context/AuthContext';
 import { ContentProvider } from './context/ContentContext';
@@ -20,7 +19,6 @@ import { AdminLayer } from './components/admin/AdminLayer';
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [showResume, setShowResume] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const loadingProgress = useRef(0);
   const [barWidth, setBarWidth] = useState(0);
@@ -93,44 +91,25 @@ function App() {
       {/* Main App */}
       {!loading && (
         <div className="app">
-          <AnimatePresence mode="wait">
-            {showResume ? (
-              <Resume
-                key="resume"
-                onBack={() => {
-                  window.scrollTo({ top: 0 });
-                  setShowResume(false);
-                }}
-              />
-            ) : (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Navbar />
-                <Hero
-                  onShowResume={() => {
-                    window.scrollTo({ top: 0 });
-                    setShowResume(true);
-                  }}
-                />
-                <About />
-                <Projects />
-                <Competitions />
-                <Skills />
-                <Timeline />
-                <Contact />
-                <Footer />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Navbar />
+            <Hero />
+            <About />
+            <Projects />
+            <Competitions />
+            <Skills />
+            <Timeline />
+            <Contact />
+            <Footer />
+          </motion.div>
 
           {/* Back to Top */}
           <AnimatePresence>
-            {showTop && !showResume && (
+            {showTop && (
               <motion.button
                 className="back-to-top"
                 onClick={scrollToTop}
