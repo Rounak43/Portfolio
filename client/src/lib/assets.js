@@ -7,7 +7,7 @@
  * hashed build output and passes the latter straight through.
  */
 
-// Eagerly collect every bundled asset as { '../assets/profile.jpg': '/portfolio/assets/profile-a1b2.jpg' }
+// Eagerly collect every bundled asset as { '../assets/profile.jpg': '/Portfolio/assets/profile-a1b2.jpg' }
 const bundled = import.meta.glob('../assets/*.{png,jpg,jpeg,svg,webp,gif}', {
   eager: true,
   query: '?url',

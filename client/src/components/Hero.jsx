@@ -11,7 +11,7 @@ const Hero = () => {
   const canvasRef = useRef(null);
   const { about } = useContent();
 
-  // BASE_URL keeps the bundled copy correct under the /portfolio/ deploy
+  // BASE_URL keeps the bundled copy correct under the /Portfolio/ deploy
   // path — a bare "/resume.pdf" 404s on GitHub Pages.
   const resumeHref = resumeDownloadUrl(
     about.data?.resumeUrl,
